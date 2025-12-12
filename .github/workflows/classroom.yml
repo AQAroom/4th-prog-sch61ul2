@@ -115,7 +115,7 @@ jobs:
           5
           %
           3
-        expected-output: неизвестная операция
+        expected-output: Неизвестная операция
         comparison-method: contains
         timeout: 5
         max-score: 10
