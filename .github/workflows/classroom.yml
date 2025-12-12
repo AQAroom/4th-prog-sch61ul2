@@ -139,8 +139,7 @@ jobs:
         DIV_ZERO_SCORE: "${{ steps.div_zero_test.outputs.score }}"
         UNK_RESULTS: "${{steps.unk_test.outputs.result}}"
       with:
-        runners: add,sub,mul,div,pow,unk
-        max-total-score: 100
+        runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
     
     - name: Generate Summary
       run: |
