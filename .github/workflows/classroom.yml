@@ -120,36 +120,17 @@ jobs:
         timeout: 5
         max-score: 10
     
-    # Шаг декодирования результатов
-    - name: Decode Results
-      id: decode
-      run: |
-        # Функция для декодирования base64
-        decode_result() {
-          local encoded="$1"
-          echo "$encoded" | base64 -d
-        }
-        
-        # Декодируем все результаты
-        echo "ADD_RESULTS_JSON=$(decode_result '${{ steps.add_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "SUB_RESULTS_JSON=$(decode_result '${{ steps.sub_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "MUL_RESULTS_JSON=$(decode_result '${{ steps.mul_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "DIV_RESULTS_JSON=$(decode_result '${{ steps.div_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "POW_RESULTS_JSON=$(decode_result '${{ steps.pow_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "DIV_ZERO_RESULTS_JSON=$(decode_result '${{ steps.div_zero_test.outputs.result }}')" >> $GITHUB_OUTPUT
-        echo "UNK_RESULTS_JSON=$(decode_result '${{ steps.unk_test.outputs.result }}')" >> $GITHUB_OUTPUT
-
     - name: Autograding Reporter
       id: reporter
       uses: classroom-resources/autograding-grading-reporter@v1
       env:
-        ADD_RESULTS: '${{ steps.decode.outputs.ADD_RESULTS_JSON }}'
-        SUB_RESULTS: '${{ steps.decode.outputs.SUB_RESULTS_JSON }}'
-        MUL_RESULTS: '${{ steps.decode.outputs.MUL_RESULTS_JSON }}'
-        DIV_RESULTS: '${{ steps.decode.outputs.DIV_RESULTS_JSON }}'
-        POW_RESULTS: '${{ steps.decode.outputs.POW_RESULTS_JSON }}'
-        DIV_ZERO_RESULTS: '${{ steps.decode.outputs.DIV_ZERO_RESULTS_JSON }}'
-        UNK_RESULTS: '${{ steps.decode.outputs.UNK_RESULTS_JSON }}'
+        ADD_RESULTS: '${{ toJson(fromJson(steps.add_test.outputs.result)) }}'
+        SUB_RESULTS: '${{ toJson(fromJson(steps.sub_test.outputs.result)) }}'
+        MUL_RESULTS: '${{ toJson(fromJson(steps.mul_test.outputs.result)) }}'
+        DIV_RESULTS: '${{ toJson(fromJson(steps.div_test.outputs.result)) }}'
+        POW_RESULTS: '${{ toJson(fromJson(steps.pow_test.outputs.result)) }}'
+        DIV_ZERO_RESULTS: '${{ toJson(fromJson(steps.div_zero_test.outputs.result)) }}'
+        UNK_RESULTS: '${{ toJson(fromJson(steps.unk_test.outputs.result)) }}'
       with:
         runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
     
