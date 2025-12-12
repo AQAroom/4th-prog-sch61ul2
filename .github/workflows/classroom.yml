@@ -125,20 +125,47 @@ jobs:
         timeout: 5
         max-score: 10
     
-    # СОБСТВЕННАЯ ГЕНЕРАЦИЯ ОТЧЕТА
-    - name: Generate Test Report
-      id: generate_report
+    # Правильное получение результатов
+    - name: Extract Scores
+      id: extract_scores
       run: |
-        # Получаем баллы за каждый тест напрямую
-        ADD_SCORE="${{ steps.add_test.outputs.score }}"
-        SUB_SCORE="${{ steps.sub_test.outputs.score }}"
-        MUL_SCORE="${{ steps.mul_test.outputs.score }}"
-        DIV_SCORE="${{ steps.div_test.outputs.score }}"
-        POW_SCORE="${{ steps.pow_test.outputs.score }}"
-        DIV_ZERO_SCORE="${{ steps.div_zero_test.outputs.score }}"
-        UNKNOWN_SCORE="${{ steps.unk_test.outputs.score }}"
+        # Декодируем результаты из base64 и извлекаем score
+        decode_and_get_score() {
+          local encoded_result="$1"
+          echo "$encoded_result" | base64 -d | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['tests'][0]['score'])"
+        }
         
-        # Если переменные пустые, устанавливаем 0
+        # Извлекаем баллы из каждого теста
+        ADD_SCORE=$(decode_and_get_score '${{ steps.add_test.outputs.result }}')
+        SUB_SCORE=$(decode_and_get_score '${{ steps.sub_test.outputs.result }}')
+        MUL_SCORE=$(decode_and_get_score '${{ steps.mul_test.outputs.result }}')
+        DIV_SCORE=$(decode_and_get_score '${{ steps.div_test.outputs.result }}')
+        POW_SCORE=$(decode_and_get_score '${{ steps.pow_test.outputs.result }}')
+        DIV_ZERO_SCORE=$(decode_and_get_score '${{ steps.div_zero_test.outputs.result }}')
+        UNKNOWN_SCORE=$(decode_and_get_score '${{ steps.unk_test.outputs.result }}')
+        
+        # Сохраняем в outputs
+        echo "add_score=$ADD_SCORE" >> $GITHUB_OUTPUT
+        echo "sub_score=$SUB_SCORE" >> $GITHUB_OUTPUT
+        echo "mul_score=$MUL_SCORE" >> $GITHUB_OUTPUT
+        echo "div_score=$DIV_SCORE" >> $GITHUB_OUTPUT
+        echo "pow_score=$POW_SCORE" >> $GITHUB_OUTPUT
+        echo "div_zero_score=$DIV_ZERO_SCORE" >> $GITHUB_OUTPUT
+        echo "unk_score=$UNKNOWN_SCORE" >> $GITHUB_OUTPUT
+        
+        # Также сохраняем в переменные окружения для удобства
+        echo "ADD_SCORE=$ADD_SCORE" >> $GITHUB_ENV
+        echo "SUB_SCORE=$SUB_SCORE" >> $GITHUB_ENV
+        echo "MUL_SCORE=$MUL_SCORE" >> $GITHUB_ENV
+        echo "DIV_SCORE=$DIV_SCORE" >> $GITHUB_ENV
+        echo "POW_SCORE=$POW_SCORE" >> $GITHUB_ENV
+        echo "DIV_ZERO_SCORE=$DIV_ZERO_SCORE" >> $GITHUB_ENV
+        echo "UNKNOWN_SCORE=$UNKNOWN_SCORE" >> $GITHUB_ENV
+    
+    # Генерация отчета с правильными баллами
+    - name: Generate Test Report
+      run: |
+        # Используем переменные из предыдущего шага
         ADD_SCORE="${ADD_SCORE:-0}"
         SUB_SCORE="${SUB_SCORE:-0}"
         MUL_SCORE="${MUL_SCORE:-0}"
@@ -169,7 +196,7 @@ jobs:
         DIV_ZERO_STATUS=$(get_status "$DIV_ZERO_SCORE")
         UNKNOWN_STATUS=$(get_status "$UNKNOWN_SCORE")
         
-        # Генерация отчета в GitHub Actions Summary
+        # Генерация отчета
         echo "## 📊 Результаты тестирования" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🧪 Детализация тестов" >> $GITHUB_STEP_SUMMARY
