@@ -265,7 +265,7 @@ jobs:
   # JOB: ЛИНТЕРЫ (информация для студента, не влияет на оценку)
   run-linters:
     runs-on: ubuntu-latest
-    name: Code Quality Check (Info Only)
+    name: Проверка качества кода
     # needs: run-tests
     if: always()
     steps:
