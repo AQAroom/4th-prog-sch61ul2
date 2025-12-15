@@ -262,7 +262,7 @@ jobs:
       with:
         runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
 
-  # JOB: ЛИНТЕРЫ (информация для студента, не влияет на оценку)
+  # JOB 2: ЛИНТЕРЫ (информация для студента, не влияет на оценку)
   run-linters:
     runs-on: ubuntu-latest
     name: Проверка качества кода
@@ -289,8 +289,8 @@ jobs:
 
       - name: Run linters
         run: |
-          # Ищем ВСЕ .py файлы в репозитории (кроме test_*)
-          files=$(git ls-files '*.py' | grep -v '^test_.*\.py$')
+          # Ищем ВСЕ .py файлы в репозитории. Исключаем и папку tests/, и файлы test_*.py в корне
+          files=$(git ls-files '*.py' | grep -v '^tests/' | grep -v '^test_.*\.py$')
           if [ -z "$files" ]; then
             echo "⚠️ Не найдены Python-файлы в твоём рекозитарии." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -353,13 +353,21 @@ jobs:
           else
             flake8_status="❌ Много"
           fi
-          echo "| Flake8 | $flake8_errors ошибки | $flake8_status | Стиль и простые ошибки |" >> $GITHUB_STEP_SUMMARY
+          echo "| Flake8 | $flake8_errors ошибок | $flake8_status | Стиль и простые ошибки |" >> $GITHUB_STEP_SUMMARY
       
           # Ruff count
-          ruff_errors=$(ruff check $files --count --exit-zero 2>&1 | grep -Eo '[0-9]+ error' | head -1 | cut -d' ' -f1 || echo "0")
-          if [ -z "$ruff_errors" ] || ! [[ "$ruff_errors" =~ ^[0-9]+$ ]]; then
-            ruff_errors="0"
+          # Просто считаем все не-warning строки, содержащие ".py:"
+          ruff_output=$(ruff check $files 2>&1 | grep -v "^warning:")
+          ruff_errors=$(echo "$ruff_output" | grep -i "found" | grep -oE '[0-9]+' | head -1)
+          
+          if [ -z "$ruff_errors" ]; then
+              ruff_errors="0"
           fi
+
+          # Время выполнения Ruff
+          # ruff_time=$(time (ruff check $files --select=ALL --quiet >/dev/null 2>&1) 2>&1 | grep real | awk '{print $2}')
+          ruff_time=$( { time ruff check $files --quiet >/dev/null 2>&1; } 2>&1 | grep real | awk '{print $2}' )
+          
           if [ "$ruff_errors" -eq 0 ]; then
             ruff_status="✅ Отлично"
           elif [ "$ruff_errors" -le 5 ]; then
@@ -367,10 +375,9 @@ jobs:
           else
             ruff_status="❌ Много"
           fi
-          
-          # Время выполнения Ruff
-          ruff_time=$(time (ruff check $files --quiet >/dev/null 2>&1) 2>&1 | grep real | awk '{print $2}')
-          echo "| Ruff ⚡ | $ruff_errors ошибки | $ruff_status | Мгновенно ($ruff_time) |" >> $GITHUB_STEP_SUMMARY
+         
+          echo "| Ruff ⚡ | $ruff_errors ошибок | $ruff_status | Мгновенно ($ruff_time) |" >> $GITHUB_STEP_SUMMARY
+          # echo "Ruff выполнился за ${ruff_time} секунд, найдено ошибок: $ruff_errors"
       
           echo "" >> $GITHUB_STEP_SUMMARY
           
